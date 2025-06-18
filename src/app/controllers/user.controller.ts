@@ -37,8 +37,8 @@ userRoutes.post('/create-user', async (req: Request, res: Response) => {
 
         // ! built-in and custom static methods
 
-        const encryptedPassword = await User.hashPassword(body.password);
-        body.password = encryptedPassword;
+        // const encryptedPassword = await User.hashPassword(body.password);
+        // body.password = encryptedPassword;
         const user = await User.create(body);
 
         res.status(201).json({
@@ -58,7 +58,23 @@ userRoutes.post('/create-user', async (req: Request, res: Response) => {
 
 userRoutes.get('/', async (req: Request, res: Response) => {
 
-    const users = await User.find()
+    const email = req.query.email ? req.query.email : ''
+    let users = []
+    //! filtering
+    // if (email) {
+    //     users = await User.find({ email: email })
+    // } else {
+    //     users = await User.find()
+    // }
+    //! sorting
+    // users = await User.find().sort({ 'email': 'asc' })
+    // users = await User.find().sort({ 'email': 1 })
+    // users = await User.find().sort({ 'email': -1 })
+    //!skipping
+    // users = await User.find().skip(8)
+    //! limit
+    users = await User.find().limit(3)
+
 
     res.status(201).json({
         success: true,
@@ -96,13 +112,13 @@ userRoutes.patch('/:userId', async (req: Request, res: Response) => {
 
 userRoutes.delete('/:userId', async (req: Request, res: Response) => {
 
-    const userId = req.params.UserId;
+    const userId = req.params.userId;
 
-    const user = await User.findByIdAndDelete(userId)
+    const user = await User.findOneAndDelete({ _id: userId })
 
     res.status(201).json({
         success: true,
         message: 'User deleted successfully',
-        User
+        user
     })
 })

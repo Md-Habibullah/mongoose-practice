@@ -2,6 +2,7 @@ import { Model, model, Schema } from "mongoose";
 import { IAddress, IUser, UserInstanceMethods, UserStaticMethods } from "../interfaces/user.interface";
 import validator from 'validator'
 import bcrypt from "bcryptjs";
+import Note from "./notes.model";
 
 const addressSchema = new Schema<IAddress>({
     city: { type: String },
@@ -58,9 +59,11 @@ const userSchema = new Schema<IUser, UserStaticMethods, UserInstanceMethods>({
     address: { type: addressSchema }
 }, {
     versionKey: false,
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 })
-
+// methods
 userSchema.method('hashPassword', async function hashPassword(plainPassword: string) {
     const password = await bcrypt.hash(plainPassword, 10)
     return password
@@ -70,5 +73,28 @@ userSchema.static('hashPassword', async function hashPassword(plainPassword: str
     const password = await bcrypt.hash(plainPassword, 10)
     return password
 });
+// pre document middleware
+userSchema.pre('save', async function (next) {
+    this.password = await bcrypt.hash(this.password, 10)
+    next()
+})
+// post document middleware
+userSchema.post('save', function (doc, next) {
+    console.log('%s has been saved', doc._id);
+    next()
+});
+// pre query middleware
+userSchema.pre('find', function (next) {
+    next();
+})
+// post query middleware
+userSchema.post('findOneAndDelete', async function (doc, next) {
+    await Note.deleteMany({ user: doc._id })
+    next()
+})
+// virtuals
+userSchema.virtual('fullName').get(function () {
+    return `${this.firstName} ${this.lastName}`
+})
 
-export const User = model<UserStaticMethods>('User', userSchema);
+export const User = model<IUser, UserStaticMethods>('User', userSchema);
